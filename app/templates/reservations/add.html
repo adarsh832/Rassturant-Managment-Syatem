@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Add New Reservation</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Customer Name</label>
+                    <input type="text" name="customer_name" class="form-control" required>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" name="customer_phone" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="customer_email" class="form-control">
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" class="form-control" required 
+                           min="{{ datetime.now().strftime('%Y-%m-%d') }}">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Time</label>
+                    <input type="time" name="time" class="form-control" required>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Number of Guests</label>
+                    <input type="number" name="number_of_guests" class="form-control" 
+                           min="1" max="20" required>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Table Number</label>
+                <input type="number" name="table_number" class="form-control" 
+                       min="1" required>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Special Requests</label>
+                <textarea name="special_requests" class="form-control" rows="3"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Create Reservation</button>
+            <a href="{{ url_for('main.reservations') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %} 
