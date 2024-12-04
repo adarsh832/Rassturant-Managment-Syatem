@@ -2,62 +2,166 @@
 
 {% block content %}
 <h2>Dashboard</h2>
+
+<!-- Statistics Cards -->
 <div class="row mt-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
-                <h5 class="card-title">Active Orders</h5>
-                <p class="card-text display-4">{{ active_orders }}</p>
+                <h5 class="card-title">Tables</h5>
+                <p class="card-text display-4">{{ available_tables }}/{{ total_tables }}</p>
+                <small>Available Tables</small>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Active Orders</h5>
+                <p class="card-text display-4">{{ active_orders }}</p>
+                <small>Pending Orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body">
                 <h5 class="card-title">Today's Revenue</h5>
                 <p class="card-text display-4">₹{{ today_revenue }}</p>
+                <small>Total Sales</small>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-info text-white">
             <div class="card-body">
-                <h5 class="card-title">Menu Items</h5>
-                <p class="card-text display-4">{{ menu_items }}</p>
+                <h5 class="card-title">Payments</h5>
+                <p class="card-text display-4">{{ paid_orders }}/{{ paid_orders + unpaid_orders }}</p>
+                <small>Completed Payments</small>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Table Status -->
 <div class="row mt-4">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5>Recent Orders</h5>
+                <h5>Table Status</h5>
             </div>
             <div class="card-body">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Table</th>
-                            <th>Status</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in recent_orders %}
-                        <tr>
-                            <td>#{{ order.id }}</td>
-                            <td>{{ order.table_number }}</td>
-                            <td>{{ order.status }}</td>
-                            <td>{{ order.timestamp.strftime('%H:%M') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="row">
+                    {% for table in tables %}
+                    <div class="col-md-3 mb-3">
+                        <div class="card {{ {
+                            'available': 'bg-success',
+                            'occupied': 'bg-danger',
+                            'reserved': 'bg-warning'
+                        }[table.status] }} text-white">
+                            <div class="card-body text-center">
+                                <h5>Table {{ table.table_number }}</h5>
+                                <p class="mb-0">{{ table.status|title }}</p>
+                                <small>Capacity: {{ table.capacity }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Status -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Order Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="orderAccordion">
+                    <!-- Pending Orders -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#pendingOrders">
+                                Pending Orders ({{ pending_orders|length }})
+                            </button>
+                        </h2>
+                        <div id="pendingOrders" class="accordion-collapse collapse show">
+                            <div class="accordion-body">
+                                {% for order in pending_orders %}
+                                <div class="alert alert-warning">
+                                    Table {{ order.table_number }} - Order #{{ order.id }}
+                                    <button class="btn btn-sm btn-success float-end" 
+                                            onclick="updateOrderStatus({{ order.id }}, 'preparing')">
+                                        Start Preparing
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preparing Orders -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#preparingOrders">
+                                Preparing ({{ preparing_orders|length }})
+                            </button>
+                        </h2>
+                        <div id="preparingOrders" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                {% for order in preparing_orders %}
+                                <div class="alert alert-info">
+                                    Table {{ order.table_number }} - Order #{{ order.id }}
+                                    <button class="btn btn-sm btn-success float-end"
+                                            onclick="updateOrderStatus({{ order.id }}, 'completed')">
+                                        Mark Complete
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Completed Orders -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#completedOrders">
+                                Completed Today ({{ completed_orders|length }})
+                            </button>
+                        </h2>
+                        <div id="completedOrders" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                {% for order in completed_orders %}
+                                <div class="alert alert-success">
+                                    Table {{ order.table_number }} - Order #{{ order.id }}
+                                    <span class="float-end">Completed</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Add JavaScript for order status updates -->
+<script>
+function updateOrderStatus(orderId, status) {
+    fetch(`/update-order-status/${orderId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    }).then(response => {
+        if (response.ok) {
+            location.reload();
+        }
+    });
+}
+</script>
 {% endblock %} 

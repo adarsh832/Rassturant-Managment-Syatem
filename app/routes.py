@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from app.models import MenuItem, Order, OrderItem, User, Reservation
+from app.models import MenuItem, Order, OrderItem, User, Reservation, CustomerOrder, Table
 from app import db
 from datetime import datetime, date, timedelta
 from werkzeug.security import generate_password_hash
@@ -14,26 +14,53 @@ main = Blueprint('main', __name__)
 def dashboard():
     # Get dashboard statistics
     active_orders = Order.query.filter_by(status='pending').count()
+    customer_orders = CustomerOrder.query.filter_by(status='paid').count()
     menu_items = MenuItem.query.count()
     
-    # Calculate today's revenue
+    # Get table status
+    tables = Table.query.order_by(Table.table_number).all()
+    available_tables = Table.query.filter_by(status='available').count()
+    
+    # Get orders by status
+    pending_orders = Order.query.filter_by(status='pending').all()
+    preparing_orders = Order.query.filter_by(status='preparing').all()
+    completed_orders = Order.query.filter_by(status='completed').all()
+    
+    # Calculate revenue
     today_orders = Order.query.filter(
         Order.timestamp >= date.today()
     ).all()
-    today_revenue = sum(
+    
+    today_customer_orders = CustomerOrder.query.filter(
+        CustomerOrder.timestamp >= date.today()
+    ).all()
+    
+    restaurant_revenue = sum(
         item.menu_item.price * item.quantity
         for order in today_orders
         for item in order.items
     )
     
-    # Get recent orders
-    recent_orders = Order.query.order_by(Order.timestamp.desc()).limit(5).all()
+    customer_revenue = sum(order.total_amount for order in today_customer_orders)
+    total_revenue = restaurant_revenue + customer_revenue
+    
+    # Get payment status for orders
+    unpaid_orders = CustomerOrder.query.filter_by(payment_status='pending').count()
+    paid_orders = CustomerOrder.query.filter_by(payment_status='completed').count()
     
     return render_template('dashboard.html',
                          active_orders=active_orders,
-                         today_revenue="{:.2f}".format(today_revenue),
+                         customer_orders=customer_orders,
+                         today_revenue="{:.2f}".format(total_revenue),
                          menu_items=menu_items,
-                         recent_orders=recent_orders)
+                         tables=tables,
+                         available_tables=available_tables,
+                         total_tables=len(tables),
+                         pending_orders=pending_orders,
+                         preparing_orders=preparing_orders,
+                         completed_orders=completed_orders,
+                         unpaid_orders=unpaid_orders,
+                         paid_orders=paid_orders)
 
 @main.route('/menu')
 @login_required
@@ -301,3 +328,64 @@ def view_tables():
         tables[table_name] = table_data
     
     return render_template('database/view.html', tables=tables)
+
+@main.route('/update-customer-order/<int:order_id>', methods=['POST'])
+@login_required
+def update_customer_order_status(order_id):
+    if not current_user.is_admin:
+        flash('Only administrators can update order status')
+        return redirect(url_for('main.dashboard'))
+    
+    order = CustomerOrder.query.get_or_404(order_id)
+    status = request.form.get('status')
+    
+    if status in ['preparing', 'delivered']:
+        order.status = status
+        db.session.commit()
+        flash('Order status updated successfully!')
+    
+    return redirect(url_for('main.dashboard'))
+
+@main.route('/manage-tables', methods=['GET', 'POST'])
+@login_required
+def manage_tables():
+    if not current_user.is_admin:
+        flash('Only administrators can manage tables')
+        return redirect(url_for('main.dashboard'))
+
+    if request.method == 'POST':
+        table_number = int(request.form.get('table_number'))
+        capacity = int(request.form.get('capacity'))
+        
+        # Check if table number already exists
+        existing_table = Table.query.filter_by(table_number=table_number).first()
+        if existing_table:
+            flash('Table number already exists')
+            return redirect(url_for('main.manage_tables'))
+        
+        table = Table(
+            table_number=table_number,
+            capacity=capacity,
+            status='available'
+        )
+        db.session.add(table)
+        db.session.commit()
+        
+        flash('Table added successfully!')
+        return redirect(url_for('main.manage_tables'))
+    
+    tables = Table.query.order_by(Table.table_number).all()
+    return render_template('manage_tables.html', tables=tables)
+
+@main.route('/update-table-status/<int:table_id>', methods=['POST'])
+@login_required
+def update_table_status(table_id):
+    table = Table.query.get_or_404(table_id)
+    status = request.json.get('status')
+    
+    if status in ['available', 'occupied', 'reserved']:
+        table.status = status
+        db.session.commit()
+        return jsonify({'success': True})
+        
+    return jsonify({'success': False}), 400

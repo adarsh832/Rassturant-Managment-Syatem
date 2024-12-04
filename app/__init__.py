@@ -26,8 +26,10 @@ def create_app():
     with app.app_context():
         from app.routes import main
         from app.auth import auth
+        from app.customer import customer
         
         app.register_blueprint(main)
         app.register_blueprint(auth)
+        app.register_blueprint(customer)
 
     return app 

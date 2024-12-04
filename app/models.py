@@ -8,7 +8,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     is_admin = db.Column(db.Boolean, default=False)
     name = db.Column(db.String(100))
-    role = db.Column(db.String(20), default='staff')  # 'admin', 'staff', 'kitchen'
+    role = db.Column(db.String(20), default='customer')  # 'admin', 'staff', 'kitchen', 'customer'
     email = db.Column(db.String(120), unique=True)
     phone = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -48,3 +48,29 @@ class Reservation(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending, confirmed, cancelled
     special_requests = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class CustomerOrder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, paid, preparing, delivered
+    payment_status = db.Column(db.String(20), default='pending')  # pending, completed
+    total_amount = db.Column(db.Float, nullable=False)
+    delivery_address = db.Column(db.String(200))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    items = db.relationship('CustomerOrderItem', backref='order', lazy=True)
+    
+class CustomerOrderItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('customer_order.id'), nullable=False)
+    menu_item_id = db.Column(db.Integer, db.ForeignKey('menu_item.id'), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    price = db.Column(db.Float, nullable=False)
+    menu_item = db.relationship('MenuItem', backref='customer_order_items')
+
+class Table(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    table_number = db.Column(db.Integer, unique=True, nullable=False)
+    capacity = db.Column(db.Integer, nullable=False)
+    is_occupied = db.Column(db.Boolean, default=False)
+    current_order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
+    status = db.Column(db.String(20), default='available')  # available, occupied, reserved

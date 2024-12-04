@@ -25,22 +25,40 @@ def init_db():
             # Add some sample menu items
             sample_items = [
                 MenuItem(
-                    name='Burger',
-                    description='Classic beef burger with cheese',
-                    price=199.00,
+                    name='Butter Chicken',
+                    description='Creamy curry with tender chicken',
+                    price=299.00,
                     category='Main Course'
                 ),
                 MenuItem(
-                    name='Caesar Salad',
-                    description='Fresh romaine lettuce with caesar dressing',
-                    price=149.00,
+                    name='Paneer Tikka',
+                    description='Grilled cottage cheese with spices',
+                    price=199.00,
                     category='Starters'
                 ),
                 MenuItem(
-                    name='Chocolate Cake',
-                    description='Rich chocolate cake with frosting',
+                    name='Gulab Jamun',
+                    description='Sweet milk dumplings',
                     price=99.00,
                     category='Desserts'
+                ),
+                MenuItem(
+                    name='Masala Dosa',
+                    description='Crispy crepe with spiced potato filling',
+                    price=149.00,
+                    category='South Indian'
+                ),
+                MenuItem(
+                    name='Biryani',
+                    description='Fragrant rice with spices and meat/vegetables',
+                    price=249.00,
+                    category='Main Course'
+                ),
+                MenuItem(
+                    name='Mango Lassi',
+                    description='Sweet yogurt drink with mango',
+                    price=79.00,
+                    category='Beverages'
                 )
             ]
             db.session.bulk_save_objects(sample_items)
